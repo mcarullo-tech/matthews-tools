@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Vectorized Monte Carlo Pi estimator
-def estimate_pi_numpy(num_samples):
+def estimate_pi(num_samples):
     # Generate all random points at once
     points = np.random.uniform(-1, 1, size=(num_samples, 2))
     
@@ -18,7 +18,7 @@ def estimate_pi_numpy(num_samples):
 def run_simulations(sample_sizes):
     pi_estimates = []
     for size in sample_sizes:
-        pi_estimate = estimate_pi_numpy(size)
+        pi_estimate = estimate_pi(size)
         pi_estimates.append(pi_estimate)
         print(f"Samples: {size}, Estimated Pi: {pi_estimate}")
     return pi_estimates
@@ -31,7 +31,7 @@ def plot_results(sample_sizes, pi_estimates):
     plt.xscale('log')
     plt.xlabel('Number of Samples (log scale)')
     plt.ylabel('Estimated Value of Pi')
-    plt.title('Monte Carlo Estimation of Pi (NumPy Vectorized)')
+    plt.title('Monte Carlo Estimation of Pi')
     plt.legend()
     plt.grid(True)
     plt.show()
