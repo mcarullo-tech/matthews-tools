@@ -1,0 +1,5 @@
+def combinations(n,r)
+  return n!/(r!*(n-r)!)
+
+n, r = input("Enter n,r: )
+print combinations(n,r)
