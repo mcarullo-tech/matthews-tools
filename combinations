@@ -1,5 +1,9 @@
-def combinations(n,r)
-  return n!/(r!*(n-r)!)
+import math
 
-n, r = input("Enter n,r: )
-print combinations(n,r)
+def combinations(n, r):
+    return math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
+
+# Get input from user
+n, r = map(int, input("Enter n and r separated by a comma: ").split(','))
+
+print(combinations(n, r))
