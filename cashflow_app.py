@@ -3,6 +3,7 @@ import streamlit as st
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import numpy_financial as npf
+import pandas as pd
 
 # ============================================================
 # STREAMLIT CONFIGURATION
@@ -102,6 +103,40 @@ def calculate_irr(cashflows):
     except:
         return None
 
+def calculate_payback_period(cashflows):
+    """Calculate payback period for robotics investment"""
+    cumsum = np.cumsum(cashflows)
+    # Find where cumsum crosses zero (investment is recovered)
+    for i, val in enumerate(cumsum):
+        if val >= 0:
+            if i == 0:
+                return 0
+            # Linear interpolation between points
+            prev_val = cumsum[i-1]
+            payback = i - 1 + (-prev_val) / (val - prev_val)
+            return payback
+    return None  # Never breaks even
+
+def calculate_breakeven_year(baseline_cf, robotics_cf):
+    """Calculate first year where robotics cumulative CF exceeds baseline"""
+    cumsum_baseline = np.cumsum(baseline_cf)
+    cumsum_robotics = np.cumsum(robotics_cf)
+    
+    for i, (base, robo) in enumerate(zip(cumsum_baseline, cumsum_robotics)):
+        if robo > base:
+            if i == 0:
+                return 0
+            # Linear interpolation
+            base_prev = cumsum_baseline[i-1]
+            robo_prev = cumsum_robotics[i-1]
+            breakeven = i - 1 + (base_prev - robo_prev) / ((robo - base) - (robo_prev - base_prev))
+            return breakeven
+    return None  # Never breaks even
+
+def calculate_cumulative_advantage(baseline_cf, robotics_cf):
+    """Calculate total cumulative advantage by end of period"""
+    return np.sum(robotics_cf) - np.sum(baseline_cf)
+
 def robotics_cash_flow_with_investment():
     """Cash flow for robotics including upfront investment impact"""
     flows = [0]  # Year -1 placeholder (we'll modify year 0)
@@ -145,6 +180,13 @@ robotics_cf_for_irr = robotics_cash_flow_with_investment()
 # Baseline IRR doesn't apply (no investment), Robotics IRR shows return on investment
 baseline_irr = None
 robotics_irr = calculate_irr(robotics_cf_for_irr)
+
+# Calculate payback period
+robotics_payback = calculate_payback_period(np.cumsum(robotics_cf))
+
+# Calculate break-even year and cumulative advantage
+breakeven_year = calculate_breakeven_year(baseline_cf, robotics_cf)
+cumulative_advantage = calculate_cumulative_advantage(baseline_cf, robotics_cf)
 
 # ============================================================
 # DISPLAY RESULTS
@@ -238,3 +280,66 @@ plt.tight_layout()
 st.pyplot(fig2)
 
 st.info("💡 Tip: Expand the 'Adjust Assumptions' section above to modify model parameters.")
+
+# ============================================================
+# SUMMARY METRICS TABLE
+# ============================================================
+
+st.markdown("---")
+st.header("📈 Summary Metrics")
+
+summary_data = {
+    'Metric': ['NPV (5-year)', 'IRR', 'Break-Even Year', 'Cumulative Advantage'],
+    'Baseline': [
+        f"${round(baseline_npv/1000)*1000:,.0f}",
+        "N/A",
+        "N/A",
+        "—"
+    ],
+    'Robotics': [
+        f"${round(robotics_npv/1000)*1000:,.0f}",
+        f"{robotics_irr*100:.1f}%" if robotics_irr else "N/A",
+        f"Year {breakeven_year:.1f}" if breakeven_year is not None else "Never",
+        f"${cumulative_advantage:,.0f}"
+    ]
+}
+
+summary_df = pd.DataFrame(summary_data)
+st.dataframe(summary_df, use_container_width=True, hide_index=True)
+
+# ============================================================
+# KEY INSIGHTS
+# ============================================================
+
+st.markdown("---")
+st.header("🎯 Key Insights")
+
+col_insights1, col_insights2 = st.columns(2)
+
+with col_insights1:
+    st.subheader("Financial Highlights")
+    npv_difference = robotics_npv - baseline_npv
+    npv_difference_rounded = round(npv_difference/1000)*1000
+    
+    if npv_difference > 0:
+        st.success(f"✅ Robotics generates **${npv_difference_rounded:,.0f}** more NPV than baseline")
+    else:
+        st.warning(f"⚠️ Robotics generates **${abs(npv_difference_rounded):,.0f}** less NPV than baseline")
+    
+    if breakeven_year is not None and breakeven_year < 5:
+        st.success(f"🎯 Robotics pulls ahead in **Year {breakeven_year:.1f}**")
+    
+    if cumulative_advantage > 0:
+        st.info(f"💰 **${cumulative_advantage:,.0f}** total advantage by Year 5")
+
+with col_insights2:
+    st.subheader("Investment Return")
+    if robotics_irr:
+        st.metric("Robotics IRR", f"{robotics_irr*100:.1f}%", "Annualized return on investment")
+    
+    total_investment = stage1_cost + stage2_cost
+    st.metric("Total Investment", f"${total_investment:,.0f}", f"Invested over {stage2_duration:.1f} years")
+    
+    year5_robotics = robotics_cf[-1]
+    year5_baseline = baseline_cf[-1]
+    st.metric("Year 5 Advantage", f"${year5_robotics - year5_baseline:,.0f}", "Annual cash flow improvement")
