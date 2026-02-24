@@ -46,7 +46,7 @@ def plot_running_probability(n_people=23, trials=5000):
 
     plt.figure(figsize=(10, 6))
     plt.plot(running_prob, label="Estimated Probability", color="royalblue")
-    plt.axhline(theoretical, color="red", linestyle="--", label="Theoretical Probability")
+    plt.axhline(theoretical, color="red", linestyle="--", label="Theoretical Probability") # type: ignore 
 
     plt.title(f"Birthday Paradox — Running Probability for {n_people} People")
     plt.xlabel("Number of Trials")

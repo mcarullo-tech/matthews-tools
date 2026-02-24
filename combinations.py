@@ -1,59 +1,132 @@
+from PyQt6.QtWidgets import * # type: ignore
+from PyQt6.QtGui import * # type: ignore
+from PyQt6.QtCore import * # type: ignore
+import sys
 import math
-import tkinter as tk
-from tkinter import messagebox
 
-# Function to calculate combinations
-def combinations(n, r):
-    return math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
 
-# Function to handle button click
-def calculate():
-    try:
-        n = int(entry_n.get())
-        r = int(entry_r.get())
-        if r > n or n < 0 or r < 0:
-            messagebox.showerror("Oops!", "❌ r cannot be greater than n and both must be non-negative.")
-            return
-        result = combinations(n, r)
-        result_label.config(text=f"🎉 Result: {result}", fg="#4CAF50", font=("Arial", 18, "bold"))
-    except ValueError:
-        messagebox.showerror("Error", "Please enter valid integers for n and r.")
+class DarkWindow(QWidget):
+    def __init__(self):
+        super().__init__()
 
-# Create main window
-root = tk.Tk()
-root.title("🎲 Fun Combinations Calculator")
+        # ----- Window setup -----
+        self.setWindowTitle("Combinations Calculator")
+        self.setFixedSize(380, 360)
+        self.setStyleSheet("background-color: #121212;")
 
-# Make window taller
-root.geometry("300x400")
-root.configure(bg="#ffe4b5")  # Light orange background
+        layout = QVBoxLayout()
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(20)
 
-# Center the window on screen
-root.eval('tk::PlaceWindow . center')
+        # ----- Title -----
+        title = QLabel("C(n, r) Combinations Calculator")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("""
+            font-size: 22px;
+            font-weight: 600;
+            color: #ffffff;
+        """)
+        layout.addWidget(title)
 
-# Title label with emoji
-title_label = tk.Label(root, text="📚 C(n, r) Calculator", font=("Comic Sans MS", 20, "bold"), bg="#ffe4b5", fg="#333")
-title_label.pack(pady=20)
+        # ----- Input: n -----
+        self.n_input = QLineEdit()
+        self.n_input.setPlaceholderText("Enter n")
+        self.n_input.setStyleSheet(self.input_style())
+        layout.addWidget(self.n_input)
 
-# Input fields frame
-frame = tk.Frame(root, bg="#ffe4b5")
-frame.pack(pady=10)
+        # ----- Input: r -----
+        self.r_input = QLineEdit()
+        self.r_input.setPlaceholderText("Enter r")
+        self.r_input.setStyleSheet(self.input_style())
+        layout.addWidget(self.r_input)
 
-tk.Label(frame, text="Enter n:", font=("Arial", 14), bg="#ffe4b5").grid(row=0, column=0, padx=10, pady=5)
-entry_n = tk.Entry(frame, width=12, font=("Arial", 14))
-entry_n.grid(row=0, column=1, padx=10, pady=5)
+        # ----- Calculate button -----
+        btn = QPushButton("Calculate")
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1f1f1f;
+                color: #ffffff;
+                border: 1px solid #3c3c3c;
+                padding: 12px;
+                font-size: 16px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #2b2b2b;
+                border: 1px solid #5a5a5a;
+            }
+        """)
+        btn.clicked.connect(self.calculate)
+        layout.addWidget(btn)
 
-tk.Label(frame, text="Enter r:", font=("Arial", 14), bg="#ffe4b5").grid(row=1, column=0, padx=10, pady=5)
-entry_r = tk.Entry(frame, width=12, font=("Arial", 14))
-entry_r.grid(row=1, column=1, padx=10, pady=5)
+        # ----- Result -----
+        self.result = QLabel(" ")
+        self.result.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.result.setStyleSheet("""
+            font-size: 18px;
+            color: #cfcfcf;
+            padding-top: 10px;
+        """)
+        layout.addWidget(self.result)
 
-# Calculate button with fun colors
-calc_button = tk.Button(root, text="✨ Calculate ✨", font=("Arial", 14, "bold"), bg="#ff69b4", fg="white", command=calculate)
-calc_button.pack(pady=20)
+        self.setLayout(layout)
 
-# Result label
-result_label = tk.Label(root, text="Result will appear here!", font=("Arial", 16), bg="#ffe4b5", fg="#333")
-result_label.pack(pady=30)
+    # Global styling function for inputs
+    def input_style(self):
+        return """
+            QLineEdit {
+                background-color: #1e1e1e;
+                border: 1px solid #3a3a3a;
+                color: #ffffff;
+                padding: 10px;
+                font-size: 16px;
+                border-radius: 8px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #6a6a6a;
+            }
+        """
 
-# Run the application
-root.mainloop()
+    # Calculate factorial combinations
+    def calculate(self):
+        try:
+            n = int(self.n_input.text())
+            r = int(self.r_input.text())
 
+            if r > n or n < 0 or r < 0:
+                self.show_error("Invalid: r cannot be greater than n.")
+                return
+
+            result = math.comb(n, r)
+
+            # --- scientific notation threshold ---
+            threshold = 10**10
+
+            if result >= threshold:
+                scientific = f"{result:.4e}"    # e.g. "3.6241e+42"
+                base, exp = scientific.split("e")
+                exp = int(exp)                 # remove leading zeros
+
+                # HTML superscript formatting
+                display = f"{base} (10<sup>{exp}</sup>)"
+            else:
+                display = str(result)
+
+            self.result.setStyleSheet("color: #72e07f; font-size: 20px;")
+            self.result.setText(f"Result: {display}")
+
+        except:
+            self.show_error("Please enter valid integers.")
+
+    # Unified error styling
+    def show_error(self, text):
+        self.result.setStyleSheet("color: #e57373; font-size: 18px;")
+        self.result.setText(text)
+
+
+# Run the app
+app = QApplication(sys.argv)
+window = DarkWindow()
+window.show()
+sys.exit(app.exec())
